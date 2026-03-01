@@ -44,7 +44,6 @@
     const Twin3Logo = ({ type, position, margin }) => {
       const marginPx = `${margin}px`;
       
-      // 設定圖片排版屬性，預設高度 32px 保持比例
       let style = { 
         position: 'absolute', 
         zIndex: 20, 
@@ -59,31 +58,31 @@
 
       let src = '';
       
-      // 對應妳上傳的官方檔名
+      // 修復：強制將檔名中的「空格」轉碼為 %20，確保瀏覽器與 html2canvas 都能成功讀取
       switch(type) {
         case 'icon':
-          src = 'logo_light 1.png';
+          src = 'logo_light%201.png';
           break;
         case 'icon-black':
-          src = 'logo_dark 1.png';
+          src = 'logo_dark%201.png';
           break;
         case 'full-black':
-          src = 'Brand logo_B_RGB.png';
+          src = 'Brand%20logo_B_RGB.png';
           break;
         case 'full':
         default:
-          src = 'Brand logo_W_RGB.png';
+          src = 'Brand%20logo_W_RGB.png';
           break;
       }
 
+      // 修復：移除 crossOrigin 屬性，避免同網域被阻擋
       return (
-        <img src={src} style={style} alt="Twin3 Official Logo" crossOrigin="anonymous" />
+        <img src={src} style={style} alt="Twin3 Official Logo" />
       );
     };
 
     // --- 主要 App 組件 ---
     function Twin3BannerStudio() {
-      // State Management
       const [language, setLanguage] = useState('en'); 
       const [apiKey, setApiKey] = useState('');
       const [prompt, setPrompt] = useState('');
@@ -93,11 +92,9 @@
       const [isGenerating, setIsGenerating] = useState(false);
       const [bgImage, setBgImage] = useState(null);
 
-      // AI Generation States
       const [aspectRatio, setAspectRatio] = useState('5/2');
       const [resolution, setResolution] = useState('8k');
 
-      // Design System States
       const [template, setTemplate] = useState('feature');
       const [logoType, setLogoType] = useState('full');
       const [logoPosition, setLogoPosition] = useState('top-left');
@@ -109,7 +106,6 @@
 
       const bannerRef = useRef(null);
 
-      // Translation Dictionary
       const t = {
         en: {
           title: "Twin3 Studio",
@@ -239,9 +235,7 @@
         setBgImage(null);
 
         try {
-          // STEP 1: Enhance Prompt (Gemini 1.5 Flash)
           setStatusKey('statusStep1');
-          
           const resPrompt = `${resolution} resolution`;
 
           const textPayload = {
@@ -265,7 +259,6 @@
           if (!generatedPrompt) throw new Error('errorExpand');
           setAdvancedPrompt(generatedPrompt);
 
-          // STEP 2: Generate Image (Imagen 3.0)
           setStatusKey('statusStep2');
 
           const apiAspectRatio = aspectRatio === '1/1' ? '1:1' : '16:9';
@@ -305,12 +298,15 @@
       const downloadBanner = async () => {
         if (!bannerRef.current || !window.html2canvas) return;
         try {
-          // html2canvas 需要使用 useCORS 來捕獲外部載入的圖片 (包含我們上傳的Logo)
+          // 修復：確保網頁字體完全載入後再進行截圖，避免文字走位
+          await document.fonts.ready;
+          
+          // 修復：移除 allowTaint，避免 Canvas 被污染導致無法下載
           const canvas = await window.html2canvas(bannerRef.current, {
             scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#0a1128'
+            useCORS: true, 
+            backgroundColor: '#0a1128',
+            logging: false
           });
           const link = document.createElement('a');
           link.download = `twin3-banner-${Date.now()}.png`;
@@ -322,12 +318,13 @@
         }
       };
 
-      const getAspectRatioClass = () => {
+      // 修復核心：使用 Padding-Bottom 駭客寫法來絕對固定比例，徹底繞過 html2canvas 的 Bug
+      const getPaddingBottom = () => {
         switch (aspectRatio) {
-          case '16/9': return 'aspect-video';
-          case '1/1': return 'aspect-square';
-          case '5/2': return 'aspect-[5/2]';
-          default: return 'aspect-[5/2]';
+          case '16/9': return '56.25%'; // 9 / 16
+          case '1/1': return '100%';    // 1 / 1
+          case '5/2': return '40%';     // 2 / 5
+          default: return '40%';
         }
       };
 
@@ -471,45 +468,54 @@
               </button>
             </div>
 
-            <div ref={bannerRef} className={`w-full max-w-5xl relative overflow-hidden bg-[#0A1128] shadow-2xl ring-1 ring-white/10 ${getAspectRatioClass()}`}>
-              {bgImage ? (
-                <div className="absolute inset-0 w-full h-full">
-                  <img src={bgImage} alt="AI Background" className="w-full h-full object-cover scale-[1.05] translate-y-[-1%]" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0A1128] via-[#0A1128]/70 to-transparent"></div>
-                </div>
-              ) : (
-                <div className="absolute inset-0 w-full h-full bg-[#0A1128] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0A1128] to-[#0A1128]">
-                  <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-                </div>
-              )}
-
-              {/* 渲染專屬官方 Logo 圖片引擎 */}
-              <Twin3Logo type={logoType} position={logoPosition} margin={logoMargin} />
-
-              <div className="absolute inset-0 z-10 p-12 flex flex-col justify-center pointer-events-none">
-                {template === 'feature' && (
-                  <div className="max-w-2xl flex flex-col gap-6 items-start">
-                    <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight whitespace-pre-line drop-shadow-lg">{headline}</h1>
-                    <p className="text-xl lg:text-2xl text-blue-100/80 font-light max-w-xl whitespace-pre-line drop-shadow">{subheadline}</p>
-                    {ctaText && <div className="mt-4 px-6 py-3 border border-orange-500/50 bg-orange-500/10 backdrop-blur-md rounded-full text-orange-400 font-semibold tracking-wider text-sm shadow-[0_0_15px_rgba(255,107,0,0.3)]">{ctaText}</div>}
+            {/* 修復核心：將外框改用 Padding-Bottom 定位比例，內部內容全部絕對定位 (Absolute) */}
+            <div 
+              ref={bannerRef} 
+              className="w-full relative overflow-hidden bg-[#0A1128] shadow-2xl ring-1 ring-white/10"
+              style={{ paddingBottom: getPaddingBottom() }}
+            >
+              <div className="absolute inset-0 w-full h-full" style={{ fontFamily: "'Inter', sans-serif" }}>
+                
+                {bgImage ? (
+                  <div className="absolute inset-0 w-full h-full">
+                    <img src={bgImage} alt="AI Background" className="w-full h-full object-cover scale-[1.05] translate-y-[-1%]" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#0A1128] via-[#0A1128]/70 to-transparent"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 w-full h-full bg-[#0A1128] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0A1128] to-[#0A1128]">
+                    <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
                   </div>
                 )}
-                {template === 'event' && (
-                  <div className="w-full flex flex-col gap-6 items-center text-center">
-                    <h1 className="text-6xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-tight tracking-tighter drop-shadow-2xl uppercase">{headline}</h1>
-                    <p className="text-2xl lg:text-3xl text-orange-500 font-medium tracking-widest uppercase drop-shadow-[0_0_10px_rgba(255,107,0,0.5)]">{subheadline}</p>
-                    {ctaText && <div className="mt-4 text-gray-400 font-mono tracking-widest text-sm border-b border-gray-600 pb-1">{ctaText}</div>}
-                  </div>
-                )}
-                {template === 'milestone' && (
-                  <div className="w-full flex flex-row items-center justify-between gap-8 h-full">
-                    <div className="flex-1 flex flex-col gap-4">
-                      <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight drop-shadow-lg uppercase">{headline}</h1>
-                      <p className="text-lg lg:text-xl text-gray-300 font-light drop-shadow">{subheadline}</p>
+
+                {/* 渲染專屬官方 Logo 圖片引擎 */}
+                <Twin3Logo type={logoType} position={logoPosition} margin={logoMargin} />
+
+                <div className="absolute inset-0 z-10 p-12 flex flex-col justify-center pointer-events-none">
+                  {template === 'feature' && (
+                    <div className="max-w-2xl flex flex-col gap-6 items-start">
+                      <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight whitespace-pre-line drop-shadow-lg">{headline}</h1>
+                      <p className="text-xl lg:text-2xl text-blue-100/80 font-light max-w-xl whitespace-pre-line drop-shadow">{subheadline}</p>
+                      {ctaText && <div className="mt-4 px-6 py-3 border border-orange-500/50 bg-orange-500/10 backdrop-blur-md rounded-full text-orange-400 font-semibold tracking-wider text-sm shadow-[0_0_15px_rgba(255,107,0,0.3)]">{ctaText}</div>}
                     </div>
-                    {ctaText && <div className="flex-shrink-0 bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl flex flex-col items-center justify-center min-w-[250px]"><span className="text-orange-500 font-black text-6xl drop-shadow-[0_0_20px_rgba(255,107,0,0.6)]">{ctaText}</span></div>}
-                  </div>
-                )}
+                  )}
+                  {template === 'event' && (
+                    <div className="w-full flex flex-col gap-6 items-center text-center">
+                      <h1 className="text-6xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-tight tracking-tighter drop-shadow-2xl uppercase">{headline}</h1>
+                      <p className="text-2xl lg:text-3xl text-orange-500 font-medium tracking-widest uppercase drop-shadow-[0_0_10px_rgba(255,107,0,0.5)]">{subheadline}</p>
+                      {ctaText && <div className="mt-4 text-gray-400 font-mono tracking-widest text-sm border-b border-gray-600 pb-1">{ctaText}</div>}
+                    </div>
+                  )}
+                  {template === 'milestone' && (
+                    <div className="w-full flex flex-row items-center justify-between gap-8 h-full">
+                      <div className="flex-1 flex flex-col gap-4">
+                        <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight drop-shadow-lg uppercase">{headline}</h1>
+                        <p className="text-lg lg:text-xl text-gray-300 font-light drop-shadow">{subheadline}</p>
+                      </div>
+                      {ctaText && <div className="flex-shrink-0 bg-white/10 backdrop-blur-lg border border-white/20 p-8 rounded-2xl flex flex-col items-center justify-center min-w-[250px]"><span className="text-orange-500 font-black text-6xl drop-shadow-[0_0_20px_rgba(255,107,0,0.6)]">{ctaText}</span></div>}
+                    </div>
+                  )}
+                </div>
+
               </div>
             </div>
             

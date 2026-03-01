@@ -8,17 +8,17 @@
   <!-- 載入 Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 載入 React, ReactDOM 與 Babel (讓瀏覽器能直接讀取 JSX) -->
+  <!-- 載入 React, ReactDOM 與 Babel -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
-  <!-- 載入 html2canvas (用於截圖下載) -->
+  <!-- 載入 html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     body { margin: 0; background-color: #030712; }
-    /* 避免字體載入閃爍 */
+    /* 載入主字體 Inter */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap');
     #root { font-family: 'Inter', sans-serif; }
   </style>
@@ -29,7 +29,7 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    // --- 內建 SVG 圖示 (取代 lucide-react) ---
+    // --- 內建 SVG 圖示庫 ---
     const IconGlobe = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>);
     const IconLayoutTemplate = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="7" rx="2" ry="2"/><rect x="3" y="14" width="9" height="7" rx="2" ry="2"/><rect x="16" y="14" width="5" height="7" rx="2" ry="2"/></svg>);
     const IconWand2 = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/></svg>);
@@ -39,6 +39,47 @@
     const IconType = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>);
     const IconMaximize = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>);
     const IconDownload = ({ className }) => (<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>);
+
+    // --- Twin3 品牌官方 Logo 圖片渲染器 ---
+    const Twin3Logo = ({ type, position, margin }) => {
+      const marginPx = `${margin}px`;
+      
+      // 設定圖片排版屬性，預設高度 32px 保持比例
+      let style = { 
+        position: 'absolute', 
+        zIndex: 20, 
+        height: '32px', 
+        objectFit: 'contain' 
+      };
+      
+      if (position.includes('top')) style.top = marginPx;
+      if (position.includes('bottom')) style.bottom = marginPx;
+      if (position.includes('left')) style.left = marginPx;
+      if (position.includes('right')) style.right = marginPx;
+
+      let src = '';
+      
+      // 對應妳上傳的官方檔名
+      switch(type) {
+        case 'icon':
+          src = 'logo_light 1.png';
+          break;
+        case 'icon-black':
+          src = 'logo_dark 1.png';
+          break;
+        case 'full-black':
+          src = 'Brand logo_B_RGB.png';
+          break;
+        case 'full':
+        default:
+          src = 'Brand logo_W_RGB.png';
+          break;
+      }
+
+      return (
+        <img src={src} style={style} alt="Twin3 Official Logo" crossOrigin="anonymous" />
+      );
+    };
 
     // --- 主要 App 組件 ---
     function Twin3BannerStudio() {
@@ -52,10 +93,15 @@
       const [isGenerating, setIsGenerating] = useState(false);
       const [bgImage, setBgImage] = useState(null);
 
-      // Design System States
+      // AI Generation States
       const [aspectRatio, setAspectRatio] = useState('5/2');
+      const [resolution, setResolution] = useState('8k');
+
+      // Design System States
       const [template, setTemplate] = useState('feature');
+      const [logoType, setLogoType] = useState('full');
       const [logoPosition, setLogoPosition] = useState('top-left');
+      const [logoMargin, setLogoMargin] = useState('24');
       
       const [headline, setHeadline] = useState('twin3 Is Infrastructure.');
       const [subheadline, setSubheadline] = useState('Building the foundation for AI-native human contribution.');
@@ -72,29 +118,44 @@
           apiKeyPlaceholder: "Enter Gemini API Key",
           promptLabel: "Enter simple concept",
           promptPlaceholder: "e.g., A glowing brain",
+          aspectRatio: "Aspect Ratio",
+          widescreen: "16:9 (Widescreen)",
+          twitter: "5:2 (Twitter Banner)",
+          square: "1:1 (Square)",
+          resolutionLabel: "AI Resolution",
+          res4k: "4K (Standard)",
+          res8k: "8K (High Quality)",
+          res16k: "16K (Ultra Masterpiece)",
           enhancedPromptLabel: "Twin3 Auto-Enhanced Prompt:",
           generateBtn: "Start Auto-Generation",
           generatingBtn: "Processing...",
           step2Title: "2. Layout Settings",
-          aspectRatio: "Aspect Ratio",
-          widescreen: "Widescreen (16:9)",
-          square: "Square (1:1)",
           template: "Layout Template",
           feature: "Feature (Left-aligned)",
           event: "Event (Centered)",
           milestone: "Milestone (Split)",
+          logoStyle: "Logo Style",
+          logoFull: "1. Full Logo (Light)",
+          logoFullBlack: "2. Full Logo (Black)",
+          logoIcon: "3. Icon Only (Light)",
+          logoIconBlack: "4. Icon Only (Black)",
           logoPosition: "Logo Position",
           topLeft: "Top Left",
           topRight: "Top Right",
           bottomLeft: "Bottom Left",
           bottomRight: "Bottom Right",
+          logoMargin: "Logo Margin",
+          px4: "4px (Tight)",
+          px8: "8px (Close)",
+          px16: "16px (Standard)",
+          px24: "24px (Wide)",
           step3Title: "3. Typography Content",
           headline: "Headline",
           subheadline: "Subheadline",
           ctaText: "CTA Text / Label",
           previewTitle: "Live Preview",
           exportBtn: "Export High-Res PNG",
-          hint: "💡 Hint: This canvas uses Flexbox for true Auto Layout. Text will automatically adapt without overlapping. Exported images will auto-crop AI watermarks.",
+          hint: "💡 Hint: Please ensure the 4 official logo image files are uploaded to your GitHub repository for the logo switch to work properly.",
           statusStep1: "Step 1/2: Twin3 Brain is enhancing the prompt...",
           statusStep2: "Step 2/2: AI is rendering a high-quality 3D image...",
           errorNoKey: "Please enter your Gemini API Key first.",
@@ -112,29 +173,44 @@
           apiKeyPlaceholder: "輸入 Gemini API Key",
           promptLabel: "輸入簡單概念 (中文可)",
           promptPlaceholder: "例如: 一個發光大腦",
+          aspectRatio: "尺寸比例",
+          widescreen: "16:9 (寬螢幕)",
+          twitter: "5:2 (Twitter 橫幅)",
+          square: "1:1 (正方形)",
+          resolutionLabel: "算圖解析度",
+          res4k: "4K (標準)",
+          res8k: "8K (高畫質)",
+          res16k: "16K (極致細節)",
           enhancedPromptLabel: "Twin3 自動擴寫的終極咒語：",
           generateBtn: "開始自動生成 (Prompt + 算圖)",
           generatingBtn: "處理中...",
           step2Title: "2. 版面設定 (Auto Layout)",
-          aspectRatio: "尺寸比例",
-          widescreen: "寬螢幕 (16:9)",
-          square: "正方形 (1:1)",
           template: "排版變體",
           feature: "一般宣告 (Feature)",
           event: "活動置中 (Event)",
           milestone: "並排對比 (Milestone)",
+          logoStyle: "Logo 形態",
+          logoFull: "1. 完整 Logo (反白)",
+          logoFullBlack: "2. 完整 Logo (黑色)",
+          logoIcon: "3. 僅圖示 (反白)",
+          logoIconBlack: "4. 僅圖示 (黑色)",
           logoPosition: "Logo 位置",
           topLeft: "左上角",
           topRight: "右上角",
           bottomLeft: "左下角",
           bottomRight: "右下角",
+          logoMargin: "Logo 邊距",
+          px4: "4px (極近)",
+          px8: "8px (近)",
+          px16: "16px (標準)",
+          px24: "24px (寬裕)",
           step3Title: "3. 文案內容",
           headline: "主標題 (Headline)",
           subheadline: "副標題 (Subheadline)",
           ctaText: "按鈕/標籤文字 (CTA)",
           previewTitle: "實時預覽",
           exportBtn: "匯出高畫質 PNG",
-          hint: "💡 提示：此畫布使用 Flexbox 實現了真正的 Auto Layout。輸入多行文字也不會重疊。生成的圖片會自動裁切邊緣以隱藏 AI 浮水印。",
+          hint: "💡 提示：請確保 4 張官方 Logo 圖檔已上傳至 GitHub，才能正常顯示並切換 Logo 圖片。",
           statusStep1: "步驟 1/2：Twin3 大腦正在擴寫 Prompt...",
           statusStep2: "步驟 2/2：AI 引擎正在生成高品質 3D 圖片...",
           errorNoKey: "請先輸入 Gemini API Key",
@@ -163,12 +239,14 @@
         setBgImage(null);
 
         try {
-          // STEP 1: Enhance Prompt (使用 gemini-1.5-flash)
+          // STEP 1: Enhance Prompt (Gemini 1.5 Flash)
           setStatusKey('statusStep1');
           
+          const resPrompt = `${resolution} resolution`;
+
           const textPayload = {
             systemInstruction: {
-              parts: [{ text: "You are the Twin3 Visual Prompt Expert. The user will give you a short concept in Chinese or English. Your job is to convert this into a master-level text-to-image prompt in English. MANDATORY BRAND CONSTRAINTS: 1. Deep navy blue background (#0A1128). 2. Main object must be 3D isometric, made of frosted glass and matte plastic. 3. Must emit a warm, glowing bright orange/amber light. 4. High-end tech vibe, minimalist, clean studio lighting, Octane Render, 8k resolution. Output ONLY the English prompt text, no other conversational words." }]
+              parts: [{ text: `You are the Twin3 Visual Prompt Expert. The user will give you a short concept in Chinese or English. Your job is to convert this into a master-level text-to-image prompt in English. MANDATORY BRAND CONSTRAINTS: 1. Deep navy blue background (#0A1128). 2. Main object must be 3D isometric, made of frosted glass and matte plastic. 3. Must emit a warm, glowing bright orange/amber light. 4. High-end tech vibe, minimalist, clean studio lighting, Octane Render, ${resPrompt}. Output ONLY the English prompt text, no other conversational words.` }]
             },
             contents: [{ parts: [{ text: prompt }] }]
           };
@@ -187,12 +265,17 @@
           if (!generatedPrompt) throw new Error('errorExpand');
           setAdvancedPrompt(generatedPrompt);
 
-          // STEP 2: Generate Image (使用 imagen-3.0-generate-001)
+          // STEP 2: Generate Image (Imagen 3.0)
           setStatusKey('statusStep2');
+
+          const apiAspectRatio = aspectRatio === '1/1' ? '1:1' : '16:9';
 
           const imagePayload = {
             instances: [{ prompt: generatedPrompt }],
-            parameters: { sampleCount: 1 }
+            parameters: { 
+              sampleCount: 1,
+              aspectRatio: apiAspectRatio
+            }
           };
 
           const imageResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
@@ -222,9 +305,11 @@
       const downloadBanner = async () => {
         if (!bannerRef.current || !window.html2canvas) return;
         try {
+          // html2canvas 需要使用 useCORS 來捕獲外部載入的圖片 (包含我們上傳的Logo)
           const canvas = await window.html2canvas(bannerRef.current, {
             scale: 2,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: '#0a1128'
           });
           const link = document.createElement('a');
@@ -234,16 +319,6 @@
         } catch (err) {
           console.error(err);
           setErrorKey('errorExport');
-        }
-      };
-
-      const getLogoClasses = () => {
-        switch (logoPosition) {
-          case 'top-left': return 'top-6 left-8';
-          case 'top-right': return 'top-6 right-8';
-          case 'bottom-left': return 'bottom-6 left-8';
-          case 'bottom-right': return 'bottom-6 right-8';
-          default: return 'top-6 left-8';
         }
       };
 
@@ -281,8 +356,29 @@
               </h2>
               <div>
                 <input type="password" placeholder={currentLang.apiKeyPlaceholder} value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none transition-colors mb-3" />
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">{currentLang.aspectRatio}</label>
+                    <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                      <option value="5/2">{currentLang.twitter}</option>
+                      <option value="16/9">{currentLang.widescreen}</option>
+                      <option value="1/1">{currentLang.square}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1">{currentLang.resolutionLabel}</label>
+                    <select value={resolution} onChange={(e) => setResolution(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                      <option value="8k">{currentLang.res8k}</option>
+                      <option value="4k">{currentLang.res4k}</option>
+                      <option value="16k">{currentLang.res16k}</option>
+                    </select>
+                  </div>
+                </div>
+
                 <label className="block text-xs text-gray-500 mb-1">{currentLang.promptLabel}</label>
                 <textarea placeholder={currentLang.promptPlaceholder} value={prompt} onChange={(e) => setPrompt(e.target.value)} className="w-full bg-gray-950 border border-gray-700 rounded-lg px-3 py-2 text-sm h-12 resize-none focus:border-orange-500 focus:outline-none transition-colors mb-3" />
+                
                 {advancedPrompt && (
                   <div className="mb-3">
                     <label className="block text-xs text-orange-500 mb-1 flex items-center gap-1"><IconWand2 className="w-3 h-3" /> {currentLang.enhancedPromptLabel}</label>
@@ -303,32 +399,44 @@
               <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-2">
                 <IconSettings className="w-4 h-4" /> {currentLang.step2Title}
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{currentLang.aspectRatio}</label>
-                  <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
-                    <option value="5/2">Twitter (5:2)</option>
-                    <option value="16/9">{currentLang.widescreen}</option>
-                    <option value="1/1">{currentLang.square}</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">{currentLang.template}</label>
-                  <select value={template} onChange={(e) => setTemplate(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
-                    <option value="feature">{currentLang.feature}</option>
-                    <option value="event">{currentLang.event}</option>
-                    <option value="milestone">{currentLang.milestone}</option>
-                  </select>
-                </div>
-              </div>
+              
               <div>
-                <label className="block text-xs text-gray-500 mb-1">{currentLang.logoPosition}</label>
-                <select value={logoPosition} onChange={(e) => setLogoPosition(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
-                  <option value="top-left">{currentLang.topLeft}</option>
-                  <option value="top-right">{currentLang.topRight}</option>
-                  <option value="bottom-left">{currentLang.bottomLeft}</option>
-                  <option value="bottom-right">{currentLang.bottomRight}</option>
+                <label className="block text-xs text-gray-500 mb-1">{currentLang.template}</label>
+                <select value={template} onChange={(e) => setTemplate(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                  <option value="feature">{currentLang.feature}</option>
+                  <option value="event">{currentLang.event}</option>
+                  <option value="milestone">{currentLang.milestone}</option>
                 </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 mb-1">{currentLang.logoStyle}</label>
+                  <select value={logoType} onChange={(e) => setLogoType(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                    <option value="full">{currentLang.logoFull}</option>
+                    <option value="full-black">{currentLang.logoFullBlack}</option>
+                    <option value="icon">{currentLang.logoIcon}</option>
+                    <option value="icon-black">{currentLang.logoIconBlack}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">{currentLang.logoPosition}</label>
+                  <select value={logoPosition} onChange={(e) => setLogoPosition(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                    <option value="top-left">{currentLang.topLeft}</option>
+                    <option value="top-right">{currentLang.topRight}</option>
+                    <option value="bottom-left">{currentLang.bottomLeft}</option>
+                    <option value="bottom-right">{currentLang.bottomRight}</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">{currentLang.logoMargin}</label>
+                  <select value={logoMargin} onChange={(e) => setLogoMargin(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-orange-500 focus:outline-none">
+                    <option value="4">{currentLang.px4}</option>
+                    <option value="8">{currentLang.px8}</option>
+                    <option value="16">{currentLang.px16}</option>
+                    <option value="24">{currentLang.px24}</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -375,12 +483,8 @@
                 </div>
               )}
 
-              <div className={`absolute ${getLogoClasses()} z-20 flex items-center gap-2`}>
-                <div className="w-6 h-6 rounded-full border-[3px] border-white flex items-center justify-center opacity-90">
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                </div>
-                <span className="text-white font-bold tracking-widest text-lg opacity-90">twin3</span>
-              </div>
+              {/* 渲染專屬官方 Logo 圖片引擎 */}
+              <Twin3Logo type={logoType} position={logoPosition} margin={logoMargin} />
 
               <div className="absolute inset-0 z-10 p-12 flex flex-col justify-center pointer-events-none">
                 {template === 'feature' && (

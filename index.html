@@ -96,7 +96,7 @@
           exportBtn: "Export High-Res PNG",
           hint: "💡 Hint: This canvas uses Flexbox for true Auto Layout. Text will automatically adapt without overlapping. Exported images will auto-crop AI watermarks.",
           statusStep1: "Step 1/2: Twin3 Brain is enhancing the prompt...",
-          statusStep2: "Step 2/2: Nano Banana is rendering a high-quality 3D image...",
+          statusStep2: "Step 2/2: AI is rendering a high-quality 3D image...",
           errorNoKey: "Please enter your Gemini API Key first.",
           errorNoPrompt: "Please enter a concept (e.g., a glowing folder).",
           errorExpand: "Failed to expand prompt. Check API Key or Network.",
@@ -136,7 +136,7 @@
           exportBtn: "匯出高畫質 PNG",
           hint: "💡 提示：此畫布使用 Flexbox 實現了真正的 Auto Layout。輸入多行文字也不會重疊。生成的圖片會自動裁切邊緣以隱藏 AI 浮水印。",
           statusStep1: "步驟 1/2：Twin3 大腦正在擴寫 Prompt...",
-          statusStep2: "步驟 2/2：Nano Banana 正在生成高品質 3D 圖片...",
+          statusStep2: "步驟 2/2：AI 引擎正在生成高品質 3D 圖片...",
           errorNoKey: "請先輸入 Gemini API Key",
           errorNoPrompt: "請輸入想要的畫面概念 (例如：一個發光的資料夾)",
           errorExpand: "擴寫 Prompt 失敗，請檢查 API Key 或網路狀態",
@@ -163,7 +163,7 @@
         setBgImage(null);
 
         try {
-          // STEP 1: Enhance Prompt
+          // STEP 1: Enhance Prompt (使用 gemini-1.5-flash)
           setStatusKey('statusStep1');
           
           const textPayload = {
@@ -173,7 +173,7 @@
             contents: [{ parts: [{ text: prompt }] }]
           };
 
-          const textResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+          const textResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(textPayload)
@@ -187,15 +187,15 @@
           if (!generatedPrompt) throw new Error('errorExpand');
           setAdvancedPrompt(generatedPrompt);
 
-          // STEP 2: Generate Image
+          // STEP 2: Generate Image (使用 imagen-3.0-generate-001)
           setStatusKey('statusStep2');
 
           const imagePayload = {
-            contents: [{ parts: [{ text: generatedPrompt }] }],
-            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+            instances: [{ prompt: generatedPrompt }],
+            parameters: { sampleCount: 1 }
           };
 
-          const imageResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`, {
+          const imageResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(imagePayload)
@@ -204,10 +204,10 @@
           if (!imageResponse.ok) throw new Error('errorGen');
 
           const imageResult = await imageResponse.json();
-          const base64Data = imageResult.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+          const base64Data = imageResult.predictions?.[0]?.bytesBase64Encoded;
 
           if (base64Data) {
-            setBgImage(`data:image/jpeg;base64,${base64Data}`);
+            setBgImage(`data:image/png;base64,${base64Data}`);
           } else {
             throw new Error('errorParse');
           }
